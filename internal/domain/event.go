@@ -6,6 +6,7 @@ import (
 
 type Event struct {
 	ID          int       `json:"id"`
+	TypeID      int       `json:"type_id"`
 	UserID      int       `json:"user_id"`
 	Username    string    `json:"username"`
 	Name        string    `json:"name"`
@@ -15,7 +16,17 @@ type Event struct {
 	EndDate     time.Time `json:"end_date"`
 	RoadPrice   float64   `json:"road_price"`
 }
-
 type EventList struct {
 	Events []Event `json:"events"`
+}
+
+type EventType struct {
+	ID       int     `json:"id"`
+	Type     string  `json:"type"`
+	Language string  `json:"language"`
+	Color    *string `json:"color"`
+}
+
+type EventTypeList struct {
+	EventTypes []EventType `json:"event_types"`
 }
