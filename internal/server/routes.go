@@ -8,6 +8,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+
+	"pwp-remastered/internal/services"
+	"pwp-remastered/internal/store"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -23,8 +26,13 @@ func (s *Server) RegisterRoutes() http.Handler {
 	}))
 
 	r.Get("/", s.HelloWorldHandler)
-
 	r.Get("/health", s.healthHandler)
+
+	// Initialize and register user handlers
+	userStore := store.NewUserStore(s.db)
+	userService := services.NewUserService(userStore)
+	s.userHandlers = NewUserHandlers(userService)
+	s.userHandlers.RegisterRoutes(r)
 
 	return r
 }
