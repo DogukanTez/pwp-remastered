@@ -5,10 +5,10 @@ import (
 )
 
 type Event struct {
-	ID          int       `json:"id"`
-	TypeID      int       `json:"type_id"`
-	UserID      int       `json:"user_id"`
-	Username    string    `json:"username"`
+	ID     int `json:"id"`
+	TypeID int `json:"type_id"`
+	UserID int `json:"user_id"`
+	// Username    string    `json:"username"`
 	Name        string    `json:"name"`
 	Title       string    `json:"title"`
 	Description *string   `json:"description"`
@@ -21,10 +21,11 @@ type EventList struct {
 }
 
 type EventType struct {
-	ID       int     `json:"id"`
-	Type     string  `json:"type"`
-	Language string  `json:"language"`
-	Color    *string `json:"color"`
+	ID         int     `json:"id"`
+	Type       string  `json:"type"`
+	Language   string  `json:"language"`
+	Color      *string `json:"color"`
+	IsPricable bool    `json:"is_pricable"`
 }
 
 type EventTypeList struct {
