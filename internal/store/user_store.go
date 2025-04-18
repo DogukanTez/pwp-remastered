@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"pwp-remastered/internal/database"
 	"pwp-remastered/internal/domain"
 )
@@ -40,7 +41,8 @@ func (s *userDBStore) GetUser(id int) (*domain.User, error) {
 	)
 
 	if err == sql.ErrNoRows {
-		return nil, nil
+		var ErrUserNotFound = errors.New("user not found")
+		return nil, ErrUserNotFound
 	}
 	if err != nil {
 		return nil, err

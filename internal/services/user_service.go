@@ -40,6 +40,7 @@ func (s *UserService) UpdateUser(user *domain.User) error {
 	argon := argon2.DefaultConfig()
 
 	existingUser, err := s.store.GetUser(user.ID)
+	fmt.Println("Existing user:", existingUser)
 	if err != nil {
 		fmt.Println("Error retrieving user:", err)
 		return err
