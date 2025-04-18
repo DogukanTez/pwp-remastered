@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"pwp-remastered/internal/domain"
 	"pwp-remastered/internal/store"
 
@@ -40,20 +41,23 @@ func (s *UserService) UpdateUser(user *domain.User) error {
 
 	existingUser, err := s.store.GetUser(user.ID)
 	if err != nil {
+		fmt.Println("Error retrieving user:", err)
 		return err
 	}
 	if existingUser == nil {
-		return nil // User not found, no update needed
-	}
-
-	hashedPassword, err := argon.HashEncoded([]byte(user.HashedPassword))
-	if err != nil {
+		fmt.Println("User not found")
 		return err
-	}
-	user.HashedPassword = string(hashedPassword)
-	// Check if the user exists
+	} else {
+		hashedPassword, err := argon.HashEncoded([]byte(user.HashedPassword))
+		if err != nil {
+			return err
+		}
+		user.HashedPassword = string(hashedPassword)
+		// Check if the user exists
 
-	return s.store.UpdateUser(user)
+		return s.store.UpdateUser(user)
+	}
+
 }
 
 // DeleteUser removes a user by ID
