@@ -3,6 +3,8 @@ package services
 import (
 	"pwp-remastered/internal/domain"
 	"pwp-remastered/internal/store"
+
+	"github.com/matthewhartstonge/argon2"
 )
 
 // UserService handles business logic for users
@@ -34,6 +36,22 @@ func (s *UserService) CreateUser(user *domain.User) error {
 
 // UpdateUser updates an existing user
 func (s *UserService) UpdateUser(user *domain.User) error {
+	argon := argon2.DefaultConfig()
+
+	hashedPassword, err := argon.HashEncoded([]byte(user.HashedPassword))
+	if err != nil {
+		return err
+	}
+	user.HashedPassword = string(hashedPassword)
+	// Check if the user exists
+	existingUser, err := s.store.GetUser(user.ID)
+	if err != nil {
+		return err
+	}
+	if existingUser == nil {
+		return nil // User not found, no update needed
+	}
+
 	return s.store.UpdateUser(user)
 }
 
