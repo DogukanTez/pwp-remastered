@@ -14,6 +14,7 @@ type UserStore interface {
 	UpdateUser(user *domain.User) error
 	DeleteUser(id int) error
 	ListUsers() ([]domain.User, error)
+	ChangeUserStatus(id int) error
 }
 
 type userDBStore struct {
@@ -31,13 +32,13 @@ func (s *userDBStore) GetUser(id int) (*domain.User, error) {
 		SELECT id, username, hashed_password, email, first_name, last_name, 
 		       is_admin, is_user, tenant_id, status
 		FROM users WHERE id = $1`
-	
+
 	err := s.db.QueryRow(query, id).Scan(
 		&user.ID, &user.Username, &user.HashedPassword, &user.Email,
 		&user.FirstName, &user.LastName, &user.IsAdmin, &user.IsUser,
 		&user.TenantID, &user.Status,
 	)
-	
+
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -53,13 +54,13 @@ func (s *userDBStore) GetUserByUsername(username string) (*domain.User, error) {
 		SELECT id, username, hashed_password, email, first_name, last_name, 
 		       is_admin, is_user, tenant_id, status
 		FROM users WHERE username = $1`
-	
+
 	err := s.db.QueryRow(query, username).Scan(
 		&user.ID, &user.Username, &user.HashedPassword, &user.Email,
 		&user.FirstName, &user.LastName, &user.IsAdmin, &user.IsUser,
 		&user.TenantID, &user.Status,
 	)
-	
+
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -75,14 +76,14 @@ func (s *userDBStore) CreateUser(user *domain.User) error {
 		                  is_admin, is_user, tenant_id, status)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id`
-	
+
 	err := s.db.QueryRow(
 		query,
 		user.Username, user.HashedPassword, user.Email,
 		user.FirstName, user.LastName, user.IsAdmin,
 		user.IsUser, user.TenantID, user.Status,
 	).Scan(&user.ID)
-	
+
 	return err
 }
 
@@ -93,7 +94,7 @@ func (s *userDBStore) UpdateUser(user *domain.User) error {
 		    first_name = $4, last_name = $5, is_admin = $6,
 		    is_user = $7, tenant_id = $8, status = $9
 		WHERE id = $10`
-	
+
 	result, err := s.db.Exec(
 		query,
 		user.Username, user.HashedPassword, user.Email,
@@ -104,7 +105,7 @@ func (s *userDBStore) UpdateUser(user *domain.User) error {
 	if err != nil {
 		return err
 	}
-	
+
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return err
@@ -112,7 +113,7 @@ func (s *userDBStore) UpdateUser(user *domain.User) error {
 	if rowsAffected == 0 {
 		return sql.ErrNoRows
 	}
-	
+
 	return nil
 }
 
@@ -122,7 +123,7 @@ func (s *userDBStore) DeleteUser(id int) error {
 	if err != nil {
 		return err
 	}
-	
+
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return err
@@ -130,7 +131,7 @@ func (s *userDBStore) DeleteUser(id int) error {
 	if rowsAffected == 0 {
 		return sql.ErrNoRows
 	}
-	
+
 	return nil
 }
 
@@ -139,13 +140,13 @@ func (s *userDBStore) ListUsers() ([]domain.User, error) {
 		SELECT id, username, hashed_password, email, first_name, last_name, 
 		       is_admin, is_user, tenant_id, status
 		FROM users`
-	
+
 	rows, err := s.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var users []domain.User
 	for rows.Next() {
 		var user domain.User
@@ -159,10 +160,27 @@ func (s *userDBStore) ListUsers() ([]domain.User, error) {
 		}
 		users = append(users, user)
 	}
-	
+
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	
+
 	return users, nil
+}
+
+func (s *userDBStore) ChangeUserStatus(id int) error {
+	query := `UPDATE users SET status = 1 - status WHERE id = $1`
+	result, err := s.db.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }

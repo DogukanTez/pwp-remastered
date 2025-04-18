@@ -27,6 +27,7 @@ func (h *UserHandlers) RegisterRoutes(r chi.Router) {
 		r.Get("/{id}", h.GetUser)
 		r.Put("/{id}", h.UpdateUser)
 		r.Delete("/{id}", h.DeleteUser)
+		r.Post("/{id}/status", h.ChangeUserStatus)
 	})
 }
 
@@ -138,6 +139,22 @@ func (h *UserHandlers) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.userService.DeleteUser(id); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *UserHandlers) ChangeUserStatus(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.userService.ChangeUserStatus(id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
