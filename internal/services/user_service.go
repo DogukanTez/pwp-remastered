@@ -38,12 +38,6 @@ func (s *UserService) CreateUser(user *domain.User) error {
 func (s *UserService) UpdateUser(user *domain.User) error {
 	argon := argon2.DefaultConfig()
 
-	hashedPassword, err := argon.HashEncoded([]byte(user.HashedPassword))
-	if err != nil {
-		return err
-	}
-	user.HashedPassword = string(hashedPassword)
-	// Check if the user exists
 	existingUser, err := s.store.GetUser(user.ID)
 	if err != nil {
 		return err
@@ -51,6 +45,13 @@ func (s *UserService) UpdateUser(user *domain.User) error {
 	if existingUser == nil {
 		return nil // User not found, no update needed
 	}
+
+	hashedPassword, err := argon.HashEncoded([]byte(user.HashedPassword))
+	if err != nil {
+		return err
+	}
+	user.HashedPassword = string(hashedPassword)
+	// Check if the user exists
 
 	return s.store.UpdateUser(user)
 }
