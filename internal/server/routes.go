@@ -35,6 +35,11 @@ func (s *Server) RegisterRoutes() http.Handler {
 	s.userHandlers = NewUserHandlers(userService)
 	s.userHandlers.RegisterRoutes(r)
 
+	eventStore := store.NewEventStore(s.db)
+	eventService := services.NewEventService(eventStore)
+	s.eventHandlers = NewEventHandlers(*eventService, eventStore)
+	s.eventHandlers.RegisterRoutes(r)
+
 	return r
 }
 

@@ -13,9 +13,10 @@ import (
 )
 
 type Server struct {
-	port        int
-	db          database.Service
-	userHandlers *UserHandlers
+	port          int
+	db            database.Service
+	userHandlers  *UserHandlers
+	eventHandlers *EventHandlers
 }
 
 func NewServer() *http.Server {
