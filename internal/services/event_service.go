@@ -3,6 +3,7 @@ package services
 import (
 	"pwp-remastered/internal/domain"
 	"pwp-remastered/internal/store"
+	"time"
 )
 
 // EventService handles business logic for events
@@ -35,4 +36,9 @@ func (s *EventService) UpdateEvent(event *domain.Event) error {
 // DeleteEvent removes an event by ID
 func (s *EventService) DeleteEvent(id int) error {
 	return s.store.DeleteEvent(id)
+}
+
+// GetDatedUserEvents retrieves events for a user within a date range
+func (s *EventService) GetDatedUserEvents(userID int, startDate time.Time, endDate time.Time) ([]domain.Event, error) {
+	return s.store.GetDatedUserEvents(userID, startDate, endDate)
 }
