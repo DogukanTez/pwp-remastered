@@ -24,15 +24,15 @@ func NewEventStore(db database.Service) EventStore {
 
 func (s *eventDBStore) GetEvent(id int) (*domain.Event, error) {
 	var event domain.Event
-	var user domain.User
+	var user domain.EventUser
 	var eventType domain.EventType
 
 	query := `
 		SELECT 
 			e.id, e.type_id, e.user_id, e.name, e.title, e.description, 
 			e.start_date, e.end_date, e.road_price,
-			u.username, u.first_name, u.last_name,
-			et.type, et.language, et.color, et.is_pricable
+			u.id, u.username, u.first_name, u.last_name,
+			et.id,et.type, et.language, et.color, et.is_pricable
 		FROM events e
 		LEFT JOIN users u ON e.user_id = u.id
 		LEFT JOIN event_types et ON e.type_id = et.id
@@ -41,8 +41,8 @@ func (s *eventDBStore) GetEvent(id int) (*domain.Event, error) {
 	err := s.db.QueryRow(query, id).Scan(
 		&event.ID, &event.TypeID, &event.UserID, &event.Name, &event.Title, &event.Description,
 		&event.StartDate, &event.EndDate, &event.RoadPrice,
-		&user.Username, &user.FirstName, &user.LastName,
-		&eventType.Type, &eventType.Language, &eventType.Color, &eventType.IsPricable,
+		&user.ID, &user.Username, &user.FirstName, &user.LastName,
+		&eventType.ID, &eventType.Type, &eventType.Language, &eventType.Color, &eventType.IsPricable,
 	)
 	if err != nil {
 		return nil, err

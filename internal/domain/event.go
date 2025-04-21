@@ -15,9 +15,10 @@ type Event struct {
 	StartDate   time.Time  `json:"start_date"`
 	EndDate     time.Time  `json:"end_date"`
 	RoadPrice   float64    `json:"road_price"`
-	User        *User      `json:"user,omitempty"`
+	User        *EventUser `json:"user,omitempty"`
 	Type        *EventType `json:"type,omitempty"`
 }
+
 type EventList struct {
 	Events []Event `json:"events"`
 }
@@ -32,4 +33,11 @@ type EventType struct {
 
 type EventTypeList struct {
 	EventTypes []EventType `json:"event_types"`
+}
+
+type EventUser struct {
+	ID        int    `json:"id"`
+	Username  string `json:"username"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
 }
