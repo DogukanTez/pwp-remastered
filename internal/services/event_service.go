@@ -42,3 +42,8 @@ func (s *EventService) DeleteEvent(id int) error {
 func (s *EventService) GetDatedUserEvents(userID int, startDate time.Time, endDate time.Time) ([]domain.Event, error) {
 	return s.store.GetDatedUserEvents(userID, startDate, endDate)
 }
+
+// GetAllDatedEvents retrieves all events within a date range
+func (s *EventService) GetAllDatedEvents(startDate time.Time, endDate time.Time) ([]domain.Event, error) {
+	return s.store.GetAllDatedEvents(startDate, endDate)
+}

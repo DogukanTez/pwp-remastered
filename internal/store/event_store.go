@@ -13,6 +13,7 @@ type EventStore interface {
 	UpdateEvent(*domain.Event) error
 	DeleteEvent(int) error
 	GetDatedUserEvents(int, time.Time, time.Time) ([]domain.Event, error)
+	GetAllDatedEvents(time.Time, time.Time) ([]domain.Event, error)
 }
 
 // Example implementation using database layer
@@ -86,6 +87,53 @@ func (s *eventDBStore) GetDatedUserEvents(id int, startdate time.Time, enddate t
 		ORDER BY e.start_date`
 
 	rows, err := s.db.Query(query, id, startdate, enddate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var event domain.Event
+		var user domain.EventUser
+		var eventType domain.EventType
+
+		err := rows.Scan(
+			&event.ID, &event.TypeID, &event.UserID, &event.Name, &event.Title, &event.Description,
+			&event.StartDate, &event.EndDate, &event.RoadPrice,
+			&user.ID, &user.Username, &user.FirstName, &user.LastName,
+			&eventType.ID, &eventType.Type, &eventType.Language, &eventType.Color, &eventType.IsPricable,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		event.User = &user
+		event.Type = &eventType
+		events = append(events, event)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return events, nil
+
+}
+
+func (s *eventDBStore) GetAllDatedEvents(startdate time.Time, enddate time.Time) ([]domain.Event, error) {
+	var events []domain.Event
+
+	query := `
+		SELECT
+			e.id, e.type_id, e.user_id, e.name, e.title, e.description,
+			e.start_date, e.end_date, e.road_price,
+			u.id, u.username, u.first_name, u.last_name,
+			et.id,et.type, et.language, et.color, et.is_pricable
+		FROM events e
+		LEFT JOIN users u ON e.user_id = u.id
+		LEFT JOIN event_types et ON e.type_id = et.id
+		WHERE e.start_date >= $1 AND e.end_date <= $2
+		ORDER BY e.start_date`
+
+	rows, err := s.db.Query(query, startdate, enddate)
 	if err != nil {
 		return nil, err
 	}

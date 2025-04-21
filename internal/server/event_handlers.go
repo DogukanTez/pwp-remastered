@@ -29,6 +29,7 @@ func (h *EventHandlers) RegisterRoutes(r chi.Router) {
 	r.Route("/events", func(r chi.Router) {
 		// r.Use(services.AuthMiddleware) // Assuming you have an auth middleware
 		r.Get("/dated/{id}", h.GetDatedUserEvents)
+		r.Get("/dated", h.GetAllDatedEvents)
 		r.Get("/{id}", h.GetEvent)
 		r.Post("/", h.CreateEvent)
 		r.Put("/{id}", h.UpdateEvent)
@@ -140,6 +141,37 @@ func (h *EventHandlers) GetDatedUserEvents(w http.ResponseWriter, r *http.Reques
 	}
 
 	events, err := h.eventStore.GetDatedUserEvents(userID, startDate, endDate)
+	if err != nil {
+		http.Error(w, "Failed to retrieve events", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(events)
+}
+
+func (h *EventHandlers) GetAllDatedEvents(w http.ResponseWriter, r *http.Request) {
+	startDateStr := r.URL.Query().Get("startdate")
+	endDateStr := r.URL.Query().Get("enddate")
+
+	if startDateStr == "" || endDateStr == "" {
+		http.Error(w, "Missing startdate or enddate", http.StatusBadRequest)
+		return
+	}
+
+	// ISO 8601 formatını parse et (örnek: "2025-03-01")
+	startDate, err := time.Parse("2006-01-02", startDateStr)
+	if err != nil {
+		http.Error(w, "Invalid startdate format. Use YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+	endDate, err := time.Parse("2006-01-02", endDateStr)
+	if err != nil {
+		http.Error(w, "Invalid enddate format. Use YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	events, err := h.eventStore.GetAllDatedEvents(startDate, endDate)
 	if err != nil {
 		http.Error(w, "Failed to retrieve events", http.StatusInternalServerError)
 		return
