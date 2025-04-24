@@ -27,7 +27,7 @@ func NewEventHandlers(eventService services.EventService, eventStore store.Event
 
 func (h *EventHandlers) RegisterRoutes(r chi.Router) {
 	r.Route("/events", func(r chi.Router) {
-		// r.Use(services.AuthMiddleware) // Assuming you have an auth middleware
+		r.Use(AuthMiddleware)
 		r.Get("/dated/{id}", h.GetDatedUserEvents)
 		r.Get("/dated", h.GetAllDatedEvents)
 		r.Get("/{id}", h.GetEvent)
