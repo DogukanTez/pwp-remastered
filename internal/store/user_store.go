@@ -12,7 +12,7 @@ type UserStore interface {
 	GetUser(id int) (*domain.User, error)
 	GetUserByUsername(username string) (*domain.User, error)
 	CreateUser(user *domain.User) error
-	UpdateUser(user *domain.User) error
+	UpdateUser(caller *domain.User, user *domain.User) error
 	DeleteUser(id int) error
 	ListUsers() ([]domain.User, error)
 	ChangeUserStatus(id int) error
@@ -89,7 +89,17 @@ func (s *userDBStore) CreateUser(user *domain.User) error {
 	return err
 }
 
-func (s *userDBStore) UpdateUser(user *domain.User) error {
+func (s *userDBStore) UpdateUser(caller *domain.User, user *domain.User) error {
+	// Admin değilse, is_admin alanını değiştirmesin
+	if !caller.IsAdmin {
+		var currentIsAdmin bool
+		err := s.db.QueryRow("SELECT is_admin FROM users WHERE id = $1", user.ID).Scan(&currentIsAdmin)
+		if err != nil {
+			return err
+		}
+		user.IsAdmin = currentIsAdmin
+	}
+
 	query := `
 		UPDATE users 
 		SET username = $1, hashed_password = $2, email = $3,

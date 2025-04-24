@@ -1,7 +1,6 @@
 package services
 
 import (
-	"errors"
 	"fmt"
 	"pwp-remastered/internal/domain"
 	"pwp-remastered/internal/store"
@@ -42,10 +41,10 @@ func (s *UserService) UpdateUser(caller *domain.User, user *domain.User) error {
 
 	// Example: Admin/self checks can be performed here using caller
 	// TODO: Implement admin/self/tenant-based authorization logic as needed
-	fmt.Println("caller:", caller)
-	if caller.IsAdmin == false || caller.ID == user.ID {
-		return errors.New("Unauthorized")
-	}
+	// fmt.Println("caller:", caller)
+	// if caller.IsAdmin == false || caller.ID == user.ID {
+	// 	return errors.New("Unauthorized")
+	// }
 
 	existingUser, err := s.store.GetUser(user.ID)
 	if err != nil {
@@ -63,7 +62,7 @@ func (s *UserService) UpdateUser(caller *domain.User, user *domain.User) error {
 		user.HashedPassword = string(hashedPassword)
 		// Check if the user exists
 
-		return s.store.UpdateUser(user)
+		return s.store.UpdateUser(caller, user)
 	}
 
 }
