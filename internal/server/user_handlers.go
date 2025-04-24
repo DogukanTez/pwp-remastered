@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/matthewhartstonge/argon2"
 )
 
@@ -23,6 +24,7 @@ func NewUserHandlers(userService *services.UserService) *UserHandlers {
 
 func (h *UserHandlers) RegisterRoutes(r chi.Router) {
 	r.Route("/users", func(r chi.Router) {
+		r.Use(AuthMiddleware)
 		r.Get("/", h.ListUsers)
 		r.Post("/", h.CreateUser)
 		r.Get("/{id}", h.GetUser)
@@ -117,7 +119,27 @@ func (h *UserHandlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	user.ID = id
 
-	if err := h.userService.UpdateUser(&user); err != nil {
+	// Extract caller from JWT (for now, only ID and is_admin fields are extracted)
+	var caller domain.User
+	tokenString := r.Header.Get("Authorization")
+	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+		tokenString = tokenString[7:]
+	}
+	if tokenString != "" {
+		token, err := ParseJWT(tokenString)
+		if err == nil && token.Valid {
+			if claims, ok := token.Claims.(jwt.MapClaims); ok {
+				if idVal, ok := claims["user_id"].(float64); ok {
+					caller.ID = int(idVal)
+				}
+				if isAdmin, ok := claims["is_admin"].(bool); ok {
+					caller.IsAdmin = isAdmin
+				}
+			}
+		}
+	}
+
+	if err := h.userService.UpdateUser(&caller, &user); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -164,6 +186,26 @@ func (h *UserHandlers) ChangeUserStatus(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// AuthMiddleware checks for JWT in Authorization header and enforces authentication
+func AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tokenString := r.Header.Get("Authorization")
+		if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+			tokenString = tokenString[7:]
+		}
+		if tokenString == "" {
+			http.Error(w, "Missing token", http.StatusUnauthorized)
+			return
+		}
+		token, err := ParseJWT(tokenString)
+		if err != nil || !token.Valid {
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // Login returns a JWT token
 func (h *UserHandlers) Login(w http.ResponseWriter, r *http.Request) {
 	type loginRequest struct {
@@ -185,7 +227,7 @@ func (h *UserHandlers) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
-	token, err := GenerateJWT(user.ID, user.Username)
+	token, err := GenerateJWT(user.ID, user.Username, user.IsAdmin)
 	if err != nil {
 		http.Error(w, "Could not generate token", http.StatusInternalServerError)
 		return

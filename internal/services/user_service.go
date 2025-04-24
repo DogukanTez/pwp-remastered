@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"pwp-remastered/internal/domain"
 	"pwp-remastered/internal/store"
@@ -36,11 +37,17 @@ func (s *UserService) CreateUser(user *domain.User) error {
 }
 
 // UpdateUser updates an existing user
-func (s *UserService) UpdateUser(user *domain.User) error {
+func (s *UserService) UpdateUser(caller *domain.User, user *domain.User) error {
 	argon := argon2.DefaultConfig()
 
+	// Example: Admin/self checks can be performed here using caller
+	// TODO: Implement admin/self/tenant-based authorization logic as needed
+	fmt.Println("caller:", caller)
+	if caller.IsAdmin == false || caller.ID == user.ID {
+		return errors.New("Unauthorized")
+	}
+
 	existingUser, err := s.store.GetUser(user.ID)
-	fmt.Println("Existing user:", existingUser)
 	if err != nil {
 		fmt.Println("Error retrieving user:", err)
 		return err
