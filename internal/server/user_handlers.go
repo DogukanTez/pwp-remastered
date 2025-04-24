@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/matthewhartstonge/argon2"
 )
 
 type UserHandlers struct {
@@ -29,6 +30,7 @@ func (h *UserHandlers) RegisterRoutes(r chi.Router) {
 		r.Delete("/{id}", h.DeleteUser)
 		r.Post("/{id}/status", h.ChangeUserStatus)
 	})
+	r.Post("/login", h.Login)
 }
 
 func (h *UserHandlers) ListUsers(w http.ResponseWriter, r *http.Request) {
@@ -160,4 +162,34 @@ func (h *UserHandlers) ChangeUserStatus(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// Login returns a JWT token
+func (h *UserHandlers) Login(w http.ResponseWriter, r *http.Request) {
+	type loginRequest struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	var req loginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+	user, err := h.userService.GetUserByUsername(req.Username)
+	if err != nil || user == nil {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+	// Use argon2 to verify password
+	if ok, _ := argon2.VerifyEncoded([]byte(req.Password), []byte(user.HashedPassword)); !ok {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+	token, err := GenerateJWT(user.ID, user.Username)
+	if err != nil {
+		http.Error(w, "Could not generate token", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"token": token})
 }
