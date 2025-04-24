@@ -14,6 +14,7 @@ type EventStore interface {
 	DeleteEvent(int) error
 	GetDatedUserEvents(int, time.Time, time.Time) ([]domain.Event, error)
 	GetAllDatedEvents(time.Time, time.Time) ([]domain.Event, error)
+	GetSelfDatedEvents(*domain.User, time.Time, time.Time) ([]domain.Event, error)
 }
 
 // Example implementation using database layer
@@ -163,4 +164,13 @@ func (s *eventDBStore) GetAllDatedEvents(startdate time.Time, enddate time.Time)
 	}
 	return events, nil
 
+}
+
+func (s *eventDBStore) GetSelfDatedEvents(caller *domain.User, startdate time.Time, enddate time.Time) ([]domain.Event, error) {
+
+	events, err := s.GetDatedUserEvents(caller.ID, startdate, enddate)
+	if err != nil {
+		return nil, err
+	}
+	return events, nil
 }

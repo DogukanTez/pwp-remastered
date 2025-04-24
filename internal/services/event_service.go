@@ -1,6 +1,8 @@
 package services
 
 import (
+	"errors"
+	"fmt"
 	"pwp-remastered/internal/domain"
 	"pwp-remastered/internal/store"
 	"time"
@@ -39,11 +41,21 @@ func (s *EventService) DeleteEvent(id int) error {
 }
 
 // GetDatedUserEvents retrieves events for a user within a date range
-func (s *EventService) GetDatedUserEvents(userID int, startDate time.Time, endDate time.Time) ([]domain.Event, error) {
+func (s *EventService) GetDatedUserEvents(caller *domain.User, userID int, startDate time.Time, endDate time.Time) ([]domain.Event, error) {
+	fmt.Println("Caller:", caller)
+	if !caller.IsAdmin {
+		fmt.Println("Caller is not admin")
+		return nil, errors.New("caller is not admin")
+		// return s.store.GetSelfDatedEvents(caller, startDate, endDate)
+	}
 	return s.store.GetDatedUserEvents(userID, startDate, endDate)
 }
 
 // GetAllDatedEvents retrieves all events within a date range
 func (s *EventService) GetAllDatedEvents(startDate time.Time, endDate time.Time) ([]domain.Event, error) {
 	return s.store.GetAllDatedEvents(startDate, endDate)
+}
+
+func (s *EventService) GetSelfDatedEvents(caller *domain.User, startDate time.Time, endDate time.Time) ([]domain.Event, error) {
+	return s.store.GetSelfDatedEvents(caller, startDate, endDate)
 }

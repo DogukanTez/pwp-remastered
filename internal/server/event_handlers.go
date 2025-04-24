@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type EventHandlers struct {
@@ -30,6 +31,7 @@ func (h *EventHandlers) RegisterRoutes(r chi.Router) {
 		r.Use(AuthMiddleware)
 		r.Get("/dated/{id}", h.GetDatedUserEvents)
 		r.Get("/dated", h.GetAllDatedEvents)
+		r.Get("/dated/me", h.GetSelfDatedEvents)
 		r.Get("/{id}", h.GetEvent)
 		r.Post("/", h.CreateEvent)
 		r.Put("/{id}", h.UpdateEvent)
@@ -140,7 +142,26 @@ func (h *EventHandlers) GetDatedUserEvents(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	events, err := h.eventStore.GetDatedUserEvents(userID, startDate, endDate)
+	var caller domain.User
+	tokenString := r.Header.Get("Authorization")
+	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+		tokenString = tokenString[7:]
+	}
+	if tokenString != "" {
+		token, err := ParseJWT(tokenString)
+		if err == nil && token.Valid {
+			if claims, ok := token.Claims.(jwt.MapClaims); ok {
+				if idVal, ok := claims["user_id"].(float64); ok {
+					caller.ID = int(idVal)
+				}
+				if isAdmin, ok := claims["is_admin"].(bool); ok {
+					caller.IsAdmin = isAdmin
+				}
+			}
+		}
+	}
+
+	events, err := h.eventService.GetDatedUserEvents(&caller, userID, startDate, endDate)
 	if err != nil {
 		http.Error(w, "Failed to retrieve events", http.StatusInternalServerError)
 		return
@@ -172,6 +193,56 @@ func (h *EventHandlers) GetAllDatedEvents(w http.ResponseWriter, r *http.Request
 	}
 
 	events, err := h.eventStore.GetAllDatedEvents(startDate, endDate)
+	if err != nil {
+		http.Error(w, "Failed to retrieve events", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(events)
+}
+
+func (h *EventHandlers) GetSelfDatedEvents(w http.ResponseWriter, r *http.Request) {
+	startDateStr := r.URL.Query().Get("startdate")
+	endDateStr := r.URL.Query().Get("enddate")
+
+	if startDateStr == "" || endDateStr == "" {
+		http.Error(w, "Missing startdate or enddate", http.StatusBadRequest)
+		return
+	}
+
+	// ISO 8601 formatını parse et (örnek: "2025-03-01")
+	startDate, err := time.Parse("2006-01-02", startDateStr)
+	if err != nil {
+		http.Error(w, "Invalid startdate format. Use YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+	endDate, err := time.Parse("2006-01-02", endDateStr)
+	if err != nil {
+		http.Error(w, "Invalid enddate format. Use YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	var caller domain.User
+	tokenString := r.Header.Get("Authorization")
+	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+		tokenString = tokenString[7:]
+	}
+	if tokenString != "" {
+		token, err := ParseJWT(tokenString)
+		if err == nil && token.Valid {
+			if claims, ok := token.Claims.(jwt.MapClaims); ok {
+				if idVal, ok := claims["user_id"].(float64); ok {
+					caller.ID = int(idVal)
+				}
+				if isAdmin, ok := claims["is_admin"].(bool); ok {
+					caller.IsAdmin = isAdmin
+				}
+			}
+		}
+	}
+
+	events, err := h.eventService.GetSelfDatedEvents(&caller, startDate, endDate)
 	if err != nil {
 		http.Error(w, "Failed to retrieve events", http.StatusInternalServerError)
 		return
