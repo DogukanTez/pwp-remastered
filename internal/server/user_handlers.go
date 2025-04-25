@@ -30,8 +30,8 @@ func (h *UserHandlers) RegisterRoutes(r chi.Router) {
 		r.Get("/{id}", h.GetUser)
 		r.Put("/{id}", h.UpdateUser)
 		r.Put("/me", h.UpdateSelfUser)
-		r.Delete("/{id}", h.DeleteUser)
-		r.Post("/{id}/status", h.ChangeUserStatus)
+		// r.Delete("/{id}", h.DeleteUser)
+		r.With(AdminMiddleware).Post("/{id}/status", h.ChangeUserStatus)
 	})
 	r.Post("/login", h.Login)
 }
@@ -268,6 +268,29 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		token, err := ParseJWT(tokenString)
 		if err != nil || !token.Valid {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func AdminMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tokenString := r.Header.Get("Authorization")
+		if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+			tokenString = tokenString[7:]
+		}
+		if tokenString == "" {
+			http.Error(w, "Missing token", http.StatusUnauthorized)
+			return
+		}
+		token, err := ParseJWT(tokenString)
+		if err != nil || !token.Valid {
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			return
+		}
+		if !token.Claims.(jwt.MapClaims)["is_admin"].(bool) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 		next.ServeHTTP(w, r)
