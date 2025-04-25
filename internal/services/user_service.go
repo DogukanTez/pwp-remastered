@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"pwp-remastered/internal/domain"
 	"pwp-remastered/internal/store"
@@ -76,6 +77,9 @@ func (s *UserService) ListUsers() ([]domain.User, error) {
 }
 
 func (s *UserService) ChangeUserStatus(caller *domain.User, id int) error {
+	if caller.IsAdmin == false {
+		return errors.New("Unauthorized")
+	}
 	return s.store.ChangeUserStatus(caller, id)
 }
 
