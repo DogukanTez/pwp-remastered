@@ -222,6 +222,11 @@ func (h *UserHandlers) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
+
+	if user.Status == 0 {
+		http.Error(w, "User account is inactive", http.StatusForbidden)
+		return
+	}
 	// Use argon2 to verify password
 	if ok, _ := argon2.VerifyEncoded([]byte(req.Password), []byte(user.HashedPassword)); !ok {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
