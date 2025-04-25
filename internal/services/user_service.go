@@ -78,3 +78,8 @@ func (s *UserService) ListUsers() ([]domain.User, error) {
 func (s *UserService) ChangeUserStatus(id int) error {
 	return s.store.ChangeUserStatus(id)
 }
+
+func (s *UserService) UpdateSelfUser(caller *domain.User) error {
+
+	return s.store.UpdateSelfUser(caller)
+}

@@ -13,6 +13,7 @@ type UserStore interface {
 	GetUserByUsername(username string) (*domain.User, error)
 	CreateUser(user *domain.User) error
 	UpdateUser(caller *domain.User, user *domain.User) error
+	UpdateSelfUser(caller *domain.User) error
 	DeleteUser(id int) error
 	ListUsers() ([]domain.User, error)
 	ChangeUserStatus(id int) error
@@ -113,6 +114,45 @@ func (s *userDBStore) UpdateUser(caller *domain.User, user *domain.User) error {
 		user.FirstName, user.LastName, user.IsAdmin,
 		user.IsUser, user.TenantID, user.Status,
 		user.ID,
+	)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
+
+func (s *userDBStore) UpdateSelfUser(caller *domain.User) error {
+	if !caller.IsAdmin {
+		var currentIsAdmin bool
+		err := s.db.QueryRow("SELECT is_admin FROM users WHERE id = $1", caller.ID).Scan(&currentIsAdmin)
+		if err != nil {
+			return err
+		}
+		caller.IsAdmin = currentIsAdmin
+	}
+
+	query := `
+		UPDATE users 
+		SET username = $1, hashed_password = $2, email = $3,
+		    first_name = $4, last_name = $5, is_admin = $6,
+		    is_user = $7, tenant_id = $8, status = $9
+		WHERE id = $10`
+
+	result, err := s.db.Exec(
+		query,
+		caller.Username, caller.HashedPassword, caller.Email,
+		caller.FirstName, caller.LastName, caller.IsAdmin,
+		caller.IsUser, caller.TenantID, caller.Status,
+		caller.ID,
 	)
 	if err != nil {
 		return err

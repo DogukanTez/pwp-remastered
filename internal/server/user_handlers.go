@@ -29,6 +29,7 @@ func (h *UserHandlers) RegisterRoutes(r chi.Router) {
 		r.Post("/", h.CreateUser)
 		r.Get("/{id}", h.GetUser)
 		r.Put("/{id}", h.UpdateUser)
+		r.Put("/me", h.UpdateSelfUser)
 		r.Delete("/{id}", h.DeleteUser)
 		r.Post("/{id}/status", h.ChangeUserStatus)
 	})
@@ -145,6 +146,48 @@ func (h *UserHandlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResp, err := json.Marshal(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResp)
+}
+
+func (h *UserHandlers) UpdateSelfUser(w http.ResponseWriter, r *http.Request) {
+
+	var caller domain.User
+
+	if err := json.NewDecoder(r.Body).Decode(&caller); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	tokenString := r.Header.Get("Authorization")
+	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+		tokenString = tokenString[7:]
+	}
+	if tokenString != "" {
+		token, err := ParseJWT(tokenString)
+		if err == nil && token.Valid {
+			if claims, ok := token.Claims.(jwt.MapClaims); ok {
+				if idVal, ok := claims["user_id"].(float64); ok {
+					caller.ID = int(idVal)
+				}
+				if isAdmin, ok := claims["is_admin"].(bool); ok {
+					caller.IsAdmin = isAdmin
+				}
+			}
+		}
+	}
+
+	if err := h.userService.UpdateSelfUser(&caller); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResp, err := json.Marshal(caller)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
