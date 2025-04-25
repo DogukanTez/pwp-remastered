@@ -30,6 +30,7 @@ func (h *UserHandlers) RegisterRoutes(r chi.Router) {
 		r.Get("/{id}", h.GetUser)
 		r.Put("/{id}", h.UpdateUser)
 		r.Put("/me", h.UpdateSelfUser)
+		r.Put("/me/password", h.UpdateSelfPassword)
 		// r.Delete("/{id}", h.DeleteUser)
 		r.With(AdminMiddleware).Post("/{id}/status", h.ChangeUserStatus)
 	})
@@ -330,4 +331,46 @@ func (h *UserHandlers) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
+}
+
+func (h *UserHandlers) UpdateSelfPassword(w http.ResponseWriter, r *http.Request) {
+	var caller domain.User
+	var passwordRequest struct {
+		Password string `json:"password"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&passwordRequest); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	tokenString := r.Header.Get("Authorization")
+	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+		tokenString = tokenString[7:]
+	}
+	if tokenString == "" {
+		http.Error(w, "Missing token", http.StatusUnauthorized)
+		return
+	}
+	token, err := ParseJWT(tokenString)
+	if err != nil || !token.Valid {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok {
+		if idVal, ok := claims["user_id"].(float64); ok {
+			caller.ID = int(idVal)
+		}
+		if isAdmin, ok := claims["is_admin"].(bool); ok {
+			caller.IsAdmin = isAdmin
+		}
+	}
+
+	if err := h.userService.UpdateSelfPassword(&caller, passwordRequest.Password); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

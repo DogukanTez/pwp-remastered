@@ -94,3 +94,7 @@ func (s *UserService) UpdateSelfUser(caller *domain.User) error {
 
 	return s.store.UpdateSelfUser(caller)
 }
+
+func (s *UserService) UpdateSelfPassword(caller *domain.User, password string) error {
+	return s.store.UpdateSelfPassword(caller, password)
+}

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"pwp-remastered/internal/database"
 	"pwp-remastered/internal/domain"
+
+	"github.com/matthewhartstonge/argon2"
 )
 
 // UserStore defines the interface for user data operations
@@ -17,6 +19,7 @@ type UserStore interface {
 	DeleteUser(id int) error
 	ListUsers() ([]domain.User, error)
 	ChangeUserStatus(caller *domain.User, id int) error
+	UpdateSelfPassword(caller *domain.User, password string) error
 }
 
 type userDBStore struct {
@@ -227,6 +230,30 @@ func (s *userDBStore) ChangeUserStatus(caller *domain.User, id int) error {
 
 	query := `UPDATE users SET status = 1 - status WHERE id = $1`
 	result, err := s.db.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+func (s *userDBStore) UpdateSelfPassword(caller *domain.User, password string) error {
+	argon := argon2.DefaultConfig()
+
+	hashedPassword, err := argon.HashEncoded([]byte(password))
+	if err != nil {
+		return err
+	}
+
+	query := `UPDATE users SET hashed_password = $1 WHERE id = $2`
+	result, err := s.db.Exec(query, hashedPassword, caller.ID)
 	if err != nil {
 		return err
 	}
