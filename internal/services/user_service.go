@@ -75,8 +75,8 @@ func (s *UserService) ListUsers() ([]domain.User, error) {
 	return s.store.ListUsers()
 }
 
-func (s *UserService) ChangeUserStatus(id int) error {
-	return s.store.ChangeUserStatus(id)
+func (s *UserService) ChangeUserStatus(caller *domain.User, id int) error {
+	return s.store.ChangeUserStatus(caller, id)
 }
 
 func (s *UserService) UpdateSelfUser(caller *domain.User) error {

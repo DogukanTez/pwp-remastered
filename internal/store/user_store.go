@@ -16,7 +16,7 @@ type UserStore interface {
 	UpdateSelfUser(caller *domain.User) error
 	DeleteUser(id int) error
 	ListUsers() ([]domain.User, error)
-	ChangeUserStatus(id int) error
+	ChangeUserStatus(caller *domain.User, id int) error
 }
 
 type userDBStore struct {
@@ -220,7 +220,11 @@ func (s *userDBStore) ListUsers() ([]domain.User, error) {
 	return users, nil
 }
 
-func (s *userDBStore) ChangeUserStatus(id int) error {
+func (s *userDBStore) ChangeUserStatus(caller *domain.User, id int) error {
+	if !caller.IsAdmin {
+		return errors.New("Unauthorized")
+	}
+
 	query := `UPDATE users SET status = 1 - status WHERE id = $1`
 	result, err := s.db.Exec(query, id)
 	if err != nil {

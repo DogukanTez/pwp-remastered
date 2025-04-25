@@ -214,6 +214,31 @@ func (h *UserHandlers) DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandlers) ChangeUserStatus(w http.ResponseWriter, r *http.Request) {
+	var caller domain.User
+
+	if err := json.NewDecoder(r.Body).Decode(&caller); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	tokenString := r.Header.Get("Authorization")
+	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+		tokenString = tokenString[7:]
+	}
+	if tokenString != "" {
+		token, err := ParseJWT(tokenString)
+		if err == nil && token.Valid {
+			if claims, ok := token.Claims.(jwt.MapClaims); ok {
+				if idVal, ok := claims["user_id"].(float64); ok {
+					caller.ID = int(idVal)
+				}
+				if isAdmin, ok := claims["is_admin"].(bool); ok {
+					caller.IsAdmin = isAdmin
+				}
+			}
+		}
+	}
+
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -221,7 +246,7 @@ func (h *UserHandlers) ChangeUserStatus(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := h.userService.ChangeUserStatus(id); err != nil {
+	if err := h.userService.ChangeUserStatus(&caller, id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
