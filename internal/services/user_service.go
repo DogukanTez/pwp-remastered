@@ -84,6 +84,13 @@ func (s *UserService) ChangeUserStatus(caller *domain.User, id int) error {
 }
 
 func (s *UserService) UpdateSelfUser(caller *domain.User) error {
+	argon := argon2.DefaultConfig()
+
+	hashedPassword, err := argon.HashEncoded([]byte(caller.HashedPassword))
+	if err != nil {
+		return err
+	}
+	caller.HashedPassword = string(hashedPassword)
 
 	return s.store.UpdateSelfUser(caller)
 }
