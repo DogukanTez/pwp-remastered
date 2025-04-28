@@ -38,7 +38,33 @@ func (h *UserHandlers) RegisterRoutes(r chi.Router) {
 }
 
 func (h *UserHandlers) ListUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := h.userService.ListUsers()
+
+	var caller domain.User
+
+	if err := json.NewDecoder(r.Body).Decode(&caller); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	tokenString := r.Header.Get("Authorization")
+	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+		tokenString = tokenString[7:]
+	}
+	if tokenString != "" {
+		token, err := ParseJWT(tokenString)
+		if err == nil && token.Valid {
+			if claims, ok := token.Claims.(jwt.MapClaims); ok {
+				if idVal, ok := claims["user_id"].(float64); ok {
+					caller.ID = int(idVal)
+				}
+				if isAdmin, ok := claims["is_admin"].(bool); ok {
+					caller.IsAdmin = isAdmin
+				}
+			}
+		}
+	}
+
+	users, err := h.userService.ListUsers(&caller)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -72,7 +72,14 @@ func (s *UserService) DeleteUser(id int) error {
 }
 
 // ListUsers retrieves all users
-func (s *UserService) ListUsers() ([]domain.User, error) {
+func (s *UserService) ListUsers(caller *domain.User) ([]domain.User, error) {
+	if !caller.IsAdmin {
+		selfUser, err := s.store.GetUser(caller.ID)
+		if err != nil {
+			return nil, err
+		}
+		return []domain.User{*selfUser}, nil
+	}
 	return s.store.ListUsers()
 }
 
