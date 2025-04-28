@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"fmt"
 	"pwp-remastered/internal/domain"
 	"pwp-remastered/internal/store"
 	"time"
@@ -32,6 +31,12 @@ func (s *EventService) CreateEvent(event *domain.Event, caller *domain.User) err
 
 // UpdateEvent modifies an existing event
 func (s *EventService) UpdateEvent(event *domain.Event, caller *domain.User) error {
+	userID := caller.ID
+
+	if event.UserID != userID {
+		return errors.New("Caller is not the owner of the event")
+	}
+
 	return s.store.UpdateEvent(event, caller)
 }
 
@@ -42,10 +47,8 @@ func (s *EventService) DeleteEvent(id int) error {
 
 // GetDatedUserEvents retrieves events for a user within a date range
 func (s *EventService) GetDatedUserEvents(caller *domain.User, userID int, startDate time.Time, endDate time.Time) ([]domain.Event, error) {
-	fmt.Println("Caller:", caller)
 	if !caller.IsAdmin {
-		fmt.Println("Caller is not admin")
-		return nil, errors.New("caller is not admin")
+		return nil, errors.New("Caller is not admin")
 		// return s.store.GetSelfDatedEvents(caller, startDate, endDate)
 	}
 	return s.store.GetDatedUserEvents(userID, startDate, endDate)

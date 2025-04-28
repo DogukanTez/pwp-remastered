@@ -99,12 +99,30 @@ func (s *eventDBStore) CreateEvent(event *domain.Event, caller *domain.User) err
 }
 
 func (s *eventDBStore) UpdateEvent(event *domain.Event, caller *domain.User) error {
-	// Implementation here
+
+	query := `
+		UPDATE events
+		SET type_id = $1, user_id = $2, name = $3, title = $4, description = $5, start_date = $6, end_date = $7, road_price = $8
+		WHERE id = $9
+		RETURNING id`
+
+	_, err := s.db.Exec(query, event.TypeID, event.UserID, event.Name, event.Title, event.Description, event.StartDate, event.EndDate, event.RoadPrice, event.ID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (s *eventDBStore) DeleteEvent(id int) error {
-	// Implementation here
+	query := `
+		DELETE FROM events
+		WHERE id = $1`
+
+	_, err := s.db.Exec(query, id)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
