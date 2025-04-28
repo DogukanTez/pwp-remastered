@@ -26,13 +26,13 @@ func (s *EventService) GetEvent(id int) (*domain.Event, error) {
 }
 
 // CreateEvent persists a new event
-func (s *EventService) CreateEvent(event *domain.Event) error {
-	return s.store.CreateEvent(event)
+func (s *EventService) CreateEvent(event *domain.Event, caller *domain.User) error {
+	return s.store.CreateEvent(event, caller)
 }
 
 // UpdateEvent modifies an existing event
-func (s *EventService) UpdateEvent(event *domain.Event) error {
-	return s.store.UpdateEvent(event)
+func (s *EventService) UpdateEvent(event *domain.Event, caller *domain.User) error {
+	return s.store.UpdateEvent(event, caller)
 }
 
 // DeleteEvent removes an event by ID

@@ -1,20 +1,25 @@
 package store
 
 import (
+	"database/sql"
+	"errors"
+	"fmt"
 	"pwp-remastered/internal/database"
 	"pwp-remastered/internal/domain"
+
 	"time"
 )
 
 // EventStore handles event data operations
 type EventStore interface {
 	GetEvent(int) (*domain.Event, error)
-	CreateEvent(*domain.Event) error
-	UpdateEvent(*domain.Event) error
+	CreateEvent(*domain.Event, *domain.User) error
+	UpdateEvent(*domain.Event, *domain.User) error
 	DeleteEvent(int) error
 	GetDatedUserEvents(int, time.Time, time.Time) ([]domain.Event, error)
 	GetAllDatedEvents(time.Time, time.Time) ([]domain.Event, error)
 	GetSelfDatedEvents(*domain.User, time.Time, time.Time) ([]domain.Event, error)
+	GetEventType(int) (*domain.EventType, error)
 }
 
 // Example implementation using database layer
@@ -57,12 +62,14 @@ func (s *eventDBStore) GetEvent(id int) (*domain.Event, error) {
 	return &event, nil
 }
 
-func (s *eventDBStore) CreateEvent(event *domain.Event) error {
-	// Implementation here
+func (s *eventDBStore) CreateEvent(event *domain.Event, caller *domain.User) error {
+	fmt.Println("Caller:", caller)
+	fmt.Println("Event:", event)
+
 	return nil
 }
 
-func (s *eventDBStore) UpdateEvent(event *domain.Event) error {
+func (s *eventDBStore) UpdateEvent(event *domain.Event, caller *domain.User) error {
 	// Implementation here
 	return nil
 }
@@ -173,4 +180,25 @@ func (s *eventDBStore) GetSelfDatedEvents(caller *domain.User, startdate time.Ti
 		return nil, err
 	}
 	return events, nil
+}
+
+func (s *eventDBStore) GetEventType(id int) (*domain.EventType, error) {
+	var eventType domain.EventType
+	query := `
+		SELECT id, type, language, color, is_pricable
+		FROM event_types
+		WHERE id = $1`
+
+	err := s.db.QueryRow(query, id).Scan(
+		&eventType.ID, &eventType.Type, &eventType.Language, &eventType.Color, &eventType.IsPricable,
+	)
+
+	if err == sql.ErrNoRows {
+		var ErrEventTypeNotFound = errors.New("event type not found")
+		return nil, ErrEventTypeNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &eventType, nil
 }

@@ -59,13 +59,32 @@ func (h *EventHandlers) GetEvent(w http.ResponseWriter, r *http.Request) {
 
 // CreateEvent creates a new event
 func (h *EventHandlers) CreateEvent(w http.ResponseWriter, r *http.Request) {
+	var caller domain.User
+	tokenString := r.Header.Get("Authorization")
+	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+		tokenString = tokenString[7:]
+	}
+	if tokenString != "" {
+		token, err := ParseJWT(tokenString)
+		if err == nil && token.Valid {
+			if claims, ok := token.Claims.(jwt.MapClaims); ok {
+				if idVal, ok := claims["user_id"].(float64); ok {
+					caller.ID = int(idVal)
+				}
+				if isAdmin, ok := claims["is_admin"].(bool); ok {
+					caller.IsAdmin = isAdmin
+				}
+			}
+		}
+	}
+
 	var event domain.Event
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	if err := h.eventStore.CreateEvent(&event); err != nil {
+	if err := h.eventService.CreateEvent(&event, &caller); err != nil {
 		http.Error(w, "Failed to create event", http.StatusInternalServerError)
 		return
 	}
@@ -77,6 +96,25 @@ func (h *EventHandlers) CreateEvent(w http.ResponseWriter, r *http.Request) {
 
 // UpdateEvent updates an existing event
 func (h *EventHandlers) UpdateEvent(w http.ResponseWriter, r *http.Request) {
+	var caller domain.User
+	tokenString := r.Header.Get("Authorization")
+	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+		tokenString = tokenString[7:]
+	}
+	if tokenString != "" {
+		token, err := ParseJWT(tokenString)
+		if err == nil && token.Valid {
+			if claims, ok := token.Claims.(jwt.MapClaims); ok {
+				if idVal, ok := claims["user_id"].(float64); ok {
+					caller.ID = int(idVal)
+				}
+				if isAdmin, ok := claims["is_admin"].(bool); ok {
+					caller.IsAdmin = isAdmin
+				}
+			}
+		}
+	}
+
 	eventID, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		http.Error(w, "Invalid event ID", http.StatusBadRequest)
@@ -90,7 +128,7 @@ func (h *EventHandlers) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	event.ID = eventID
-	if err := h.eventStore.UpdateEvent(&event); err != nil {
+	if err := h.eventService.UpdateEvent(&event, &caller); err != nil {
 		http.Error(w, "Failed to update event", http.StatusInternalServerError)
 		return
 	}
