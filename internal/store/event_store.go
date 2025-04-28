@@ -3,7 +3,6 @@ package store
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"pwp-remastered/internal/database"
 	"pwp-remastered/internal/domain"
 
@@ -63,8 +62,38 @@ func (s *eventDBStore) GetEvent(id int) (*domain.Event, error) {
 }
 
 func (s *eventDBStore) CreateEvent(event *domain.Event, caller *domain.User) error {
-	fmt.Println("Caller:", caller)
-	fmt.Println("Event:", event)
+	userID := caller.ID
+	typeID := event.TypeID
+
+	EventType, err := s.GetEventType(typeID)
+
+	if err != nil {
+		return err
+	}
+
+	event.Type = EventType
+	event.UserID = userID
+
+	query := `
+		INSERT INTO events (type_id, user_id, name, title, description, start_date, end_date, road_price)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id`
+
+	err = s.db.QueryRow(query, typeID, userID, event.Name, event.Title, event.Description, event.StartDate, event.EndDate, event.RoadPrice).Scan(&event.ID)
+	if err != nil {
+		return err
+	}
+
+	userQuery := `
+		SELECT u.id, u.username, u.first_name, u.last_name
+		FROM users u
+		WHERE u.id = $1`
+	var user domain.EventUser
+	err = s.db.QueryRow(userQuery, userID).Scan(&user.ID, &user.Username, &user.FirstName, &user.LastName)
+	if err != nil {
+		return err
+	}
+	event.User = &user
 
 	return nil
 }
