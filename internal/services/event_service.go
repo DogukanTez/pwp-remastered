@@ -55,7 +55,10 @@ func (s *EventService) GetDatedUserEvents(caller *domain.User, userID int, start
 }
 
 // GetAllDatedEvents retrieves all events within a date range
-func (s *EventService) GetAllDatedEvents(startDate time.Time, endDate time.Time) ([]domain.Event, error) {
+func (s *EventService) GetAllDatedEvents(caller *domain.User, startDate time.Time, endDate time.Time) ([]domain.Event, error) {
+	if !caller.IsAdmin {
+		return nil, errors.New("Caller is not authorized")
+	}
 	return s.store.GetAllDatedEvents(startDate, endDate)
 }
 

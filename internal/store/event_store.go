@@ -99,6 +99,7 @@ func (s *eventDBStore) CreateEvent(event *domain.Event, caller *domain.User) err
 }
 
 func (s *eventDBStore) UpdateEvent(event *domain.Event, caller *domain.User) error {
+	//TODO: type cannot be manually changed add it to query and remove user_id
 
 	query := `
 		UPDATE events
