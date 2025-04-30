@@ -210,23 +210,10 @@ func (h *EventHandlers) GetDatedUserEvents(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *EventHandlers) GetAllDatedEvents(w http.ResponseWriter, r *http.Request) {
-	var caller domain.User
-	tokenString := r.Header.Get("Authorization")
-	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
-		tokenString = tokenString[7:]
-	}
-	if tokenString != "" {
-		token, err := ParseJWT(tokenString)
-		if err == nil && token.Valid {
-			if claims, ok := token.Claims.(jwt.MapClaims); ok {
-				if idVal, ok := claims["user_id"].(float64); ok {
-					caller.ID = int(idVal)
-				}
-				if isAdmin, ok := claims["is_admin"].(bool); ok {
-					caller.IsAdmin = isAdmin
-				}
-			}
-		}
+	caller, err := ExtractUserFromRequest(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
 	}
 
 	startDateStr := r.URL.Query().Get("startdate")
@@ -249,10 +236,8 @@ func (h *EventHandlers) GetAllDatedEvents(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// events, err := h.eventStore.GetAllDatedEvents(startDate, endDate)
 	events, err := h.eventService.GetAllDatedEvents(&caller, startDate, endDate)
 	if err != nil {
-		// http.Error(w, "Failed to retrieve events", http.StatusInternalServerError)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
