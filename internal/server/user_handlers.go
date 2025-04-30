@@ -38,11 +38,9 @@ func (h *UserHandlers) RegisterRoutes(r chi.Router) {
 }
 
 func (h *UserHandlers) ListUsers(w http.ResponseWriter, r *http.Request) {
-
-	var caller domain.User
-
-	if err := json.NewDecoder(r.Body).Decode(&caller); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	caller, err := ExtractUserFromRequest(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
