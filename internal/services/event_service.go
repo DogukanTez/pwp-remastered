@@ -42,6 +42,7 @@ func (s *EventService) UpdateEvent(event *domain.Event, caller *domain.User) err
 
 // DeleteEvent removes an event by ID
 func (s *EventService) DeleteEvent(id int) error {
+
 	return s.store.DeleteEvent(id)
 }
 

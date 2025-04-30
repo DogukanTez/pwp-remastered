@@ -145,7 +145,7 @@ func (h *EventHandlers) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.eventStore.DeleteEvent(eventID); err != nil {
+	if err := h.eventService.DeleteEvent(eventID); err != nil {
 		http.Error(w, "Failed to delete event", http.StatusInternalServerError)
 		return
 	}
@@ -249,9 +249,11 @@ func (h *EventHandlers) GetAllDatedEvents(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	events, err := h.eventStore.GetAllDatedEvents(startDate, endDate)
+	// events, err := h.eventStore.GetAllDatedEvents(startDate, endDate)
+	events, err := h.eventService.GetAllDatedEvents(&caller, startDate, endDate)
 	if err != nil {
-		http.Error(w, "Failed to retrieve events", http.StatusInternalServerError)
+		// http.Error(w, "Failed to retrieve events", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
