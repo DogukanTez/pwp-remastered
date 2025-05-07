@@ -1,0 +1,327 @@
+openapi: 3.0.3
+info:
+  title: PWP Event & User API
+  description: Kullanıcı ve etkinlik yönetimi için RESTful API
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8080
+
+paths:
+  /login:
+    post:
+      summary: Kullanıcı girişi yap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required: [username, password]
+      responses:
+        "200":
+          description: Başarılı giriş (JWT döner)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        "401":
+          description: Yetkisiz
+
+  /users:
+    get:
+      summary: Kullanıcıları listele (admin yetkisi gerekir)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Kullanıcı listesi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+    post:
+      summary: Yeni kullanıcı oluştur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "201":
+          description: Kullanıcı oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      summary: Belirli kullanıcıyı getir
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Kullanıcı bilgisi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    put:
+      summary: Kullanıcı güncelle
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "200":
+          description: Güncellendi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /events:
+    post:
+      summary: Etkinlik oluştur
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Event"
+      responses:
+        "201":
+          description: Etkinlik oluşturuldu
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+
+  /events/{id}:
+    get:
+      summary: Belirli etkinliği getir
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Etkinlik bilgisi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+    put:
+      summary: Etkinlik güncelle
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Event"
+      responses:
+        "200":
+          description: Güncellendi
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+    delete:
+      summary: Etkinlik sil
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Silindi
+
+  /events/dated:
+    get:
+      summary: Tarih aralığına göre tüm etkinlikleri getir (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startdate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: enddate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Etkinlik listesi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+
+  /events/dated/me:
+    get:
+      summary: Giriş yapan kullanıcının tarihli etkinlikleri
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startdate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: enddate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Kendi etkinlik listesi
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        hashed_password:
+          type: string
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        is_admin:
+          type: boolean
+        is_user:
+          type: boolean
+        tenant_id:
+          type: integer
+        status:
+          type: integer
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        type_id:
+          type: integer
+        user_id:
+          type: integer
+        name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        road_price:
+          type: number
+        user:
+          $ref: "#/components/schemas/EventUser"
+        type:
+          $ref: "#/components/schemas/EventType"
+
+    EventUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+
+    EventType:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        language:
+          type: string
+        color:
+          type: string
+          nullable: true
+        is_pricable:
+          type: boolean
