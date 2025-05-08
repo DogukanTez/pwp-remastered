@@ -109,6 +109,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+  /users/me:
+    put:
+      summary: Update self user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "200":
+          description: Updated self user
+
+  /users/me/password:
+    put:
+      summary: Change self password
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+      responses:
+        "204":
+          description: Password updated
+
+  /users/{id}/status:
+    post:
+      summary: Toggle user status (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: User status changed
 
   /events:
     post:
@@ -237,6 +284,30 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Event"
+  /events/dated/{id}:
+    get:
+      summary: Get dated events by user ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: startdate
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: enddate
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of user events
 
 components:
   securitySchemes:
