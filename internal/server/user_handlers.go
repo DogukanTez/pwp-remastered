@@ -335,17 +335,17 @@ func (h *UserHandlers) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := h.userService.GetUserByUsername(req.Username)
 	if err != nil || user == nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		http.Error(w, "Giriş bilgileri hatalı.", http.StatusUnauthorized)
 		return
 	}
 
 	if user.Status == 0 {
-		http.Error(w, "User account is inactive", http.StatusForbidden)
+		http.Error(w, "Kulanıcı hesabı inaktif.", http.StatusForbidden)
 		return
 	}
 	// Use argon2 to verify password
 	if ok, _ := argon2.VerifyEncoded([]byte(req.Password), []byte(user.HashedPassword)); !ok {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		http.Error(w, "Giriş bilgileri hatalı.", http.StatusUnauthorized)
 		return
 	}
 	token, err := GenerateJWT(user.ID, user.Username, user.IsAdmin)
@@ -355,6 +355,17 @@ func (h *UserHandlers) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
+	// http.SetCookie(w, &http.Cookie{
+	// 	Name:     "token",
+	// 	Value:    token,
+	// 	HttpOnly: true,
+	// 	Secure:   false, // https kullanıyorsan true yap
+	// 	SameSite: http.SameSiteStrictMode,
+	// 	Path:     "/",
+	// 	Expires:  time.Now().Add(1 * time.Hour),
+	// })
+	// w.WriteHeader(http.StatusOK)
+
 }
 
 func (h *UserHandlers) UpdateSelfPassword(w http.ResponseWriter, r *http.Request) {

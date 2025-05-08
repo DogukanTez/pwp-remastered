@@ -295,3 +295,58 @@ func (h *EventHandlers) GetSelfDatedEvents(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(events)
 }
+
+/*func (h *EventHandlers) GetSelfDatedEvents(w http.ResponseWriter, r *http.Request) {
+	startDateStr := r.URL.Query().Get("startdate")
+	endDateStr := r.URL.Query().Get("enddate")
+
+	if startDateStr == "" || endDateStr == "" {
+		http.Error(w, "Missing startdate or enddate", http.StatusBadRequest)
+		return
+	}
+
+	startDate, err := time.Parse("2006-01-02", startDateStr)
+	if err != nil {
+		http.Error(w, "Invalid startdate format. Use YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+	endDate, err := time.Parse("2006-01-02", endDateStr)
+	if err != nil {
+		http.Error(w, "Invalid enddate format. Use YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	var caller domain.User
+
+	// ⬇️ JWT'yi cookie'den oku
+	tokenCookie, err := r.Cookie("token")
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	tokenString := tokenCookie.Value
+
+	token, err := ParseJWT(tokenString)
+	if err != nil || !token.Valid {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok {
+		if idVal, ok := claims["user_id"].(float64); ok {
+			caller.ID = int(idVal)
+		}
+		if isAdmin, ok := claims["is_admin"].(bool); ok {
+			caller.IsAdmin = isAdmin
+		}
+	}
+
+	events, err := h.eventService.GetSelfDatedEvents(&caller, startDate, endDate)
+	if err != nil {
+		http.Error(w, "Failed to retrieve events", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(events)
+}*/
