@@ -28,6 +28,7 @@ func (h *UserHandlers) RegisterRoutes(r chi.Router) {
 		r.Get("/", h.ListUsers)
 		r.Post("/", h.CreateUser)
 		r.Get("/{id}", h.GetUser)
+		r.Get("/me", h.GetSelfUser)
 		r.Put("/{id}", h.UpdateUser)
 		r.Put("/me", h.UpdateSelfUser)
 		r.Put("/me/password", h.UpdateSelfPassword)
@@ -88,6 +89,33 @@ func (h *UserHandlers) GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := h.userService.GetUser(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if user == nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	jsonResp, err := json.Marshal(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResp)
+}
+
+func (h *UserHandlers) GetSelfUser(w http.ResponseWriter, r *http.Request) {
+	caller, err := ExtractUserFromRequest(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	user, err := h.userService.GetUser(caller.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

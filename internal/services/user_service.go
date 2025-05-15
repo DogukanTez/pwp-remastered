@@ -26,6 +26,10 @@ func (s *UserService) GetUser(id int) (*domain.User, error) {
 	return s.store.GetUser(id)
 }
 
+func (s *UserService) GetUserMe(caller *domain.User) (*domain.User, error) {
+	return s.store.GetUser(caller.ID)
+}
+
 // GetUserByUsername retrieves a user by username
 func (s *UserService) GetUserByUsername(username string) (*domain.User, error) {
 	return s.store.GetUserByUsername(username)
