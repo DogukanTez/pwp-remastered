@@ -36,6 +36,7 @@ func (h *EventHandlers) RegisterRoutes(r chi.Router) {
 		r.Post("/", h.CreateEvent)
 		r.Put("/{id}", h.UpdateEvent)
 		r.Delete("/{id}", h.DeleteEvent)
+		r.Get("/types", h.GetEventTypes)
 	})
 }
 
@@ -294,6 +295,17 @@ func (h *EventHandlers) GetSelfDatedEvents(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(events)
+}
+
+func (h *EventHandlers) GetEventTypes(w http.ResponseWriter, r *http.Request) {
+	types, err := h.eventService.GetEventTypes()
+	if err != nil {
+		http.Error(w, "Failed to retrieve event types", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(types)
 }
 
 /*func (h *EventHandlers) GetSelfDatedEvents(w http.ResponseWriter, r *http.Request) {

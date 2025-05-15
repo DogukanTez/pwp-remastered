@@ -19,6 +19,7 @@ type EventStore interface {
 	GetAllDatedEvents(time.Time, time.Time) ([]domain.Event, error)
 	GetSelfDatedEvents(*domain.User, time.Time, time.Time) ([]domain.Event, error)
 	GetEventType(int) (*domain.EventType, error)
+	GetEventTypes() ([]domain.EventType, error)
 }
 
 // Example implementation using database layer
@@ -249,4 +250,33 @@ func (s *eventDBStore) GetEventType(id int) (*domain.EventType, error) {
 		return nil, err
 	}
 	return &eventType, nil
+}
+
+func (s *eventDBStore) GetEventTypes() ([]domain.EventType, error) {
+	var eventTypes []domain.EventType
+	query := `
+		SELECT id, type, language, color, is_pricable
+		FROM event_types`
+
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var eventType domain.EventType
+		err := rows.Scan(
+			&eventType.ID, &eventType.Type, &eventType.Language, &eventType.Color, &eventType.IsPricable,
+		)
+		if err != nil {
+			return nil, err
+		}
+		eventTypes = append(eventTypes, eventType)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return eventTypes, nil
+
 }

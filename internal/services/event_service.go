@@ -66,3 +66,7 @@ func (s *EventService) GetAllDatedEvents(caller *domain.User, startDate time.Tim
 func (s *EventService) GetSelfDatedEvents(caller *domain.User, startDate time.Time, endDate time.Time) ([]domain.Event, error) {
 	return s.store.GetSelfDatedEvents(caller, startDate, endDate)
 }
+
+func (s *EventService) GetEventTypes() ([]domain.EventType, error) {
+	return s.store.GetEventTypes()
+}
