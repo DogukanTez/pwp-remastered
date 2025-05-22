@@ -194,7 +194,8 @@ func (s *userDBStore) ListUsers() ([]domain.User, error) {
 	query := `
 		SELECT id, username, hashed_password, email, first_name, last_name, 
 		       is_admin, is_user, tenant_id, status
-		FROM users`
+		FROM users
+		WHERE status != 0`
 
 	rows, err := s.db.Query(query)
 	if err != nil {
