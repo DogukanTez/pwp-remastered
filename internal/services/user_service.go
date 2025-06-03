@@ -109,3 +109,10 @@ func (s *UserService) UpdateSelfUser(caller *domain.User) error {
 func (s *UserService) UpdateSelfPassword(caller *domain.User, password string) error {
 	return s.store.UpdateSelfPassword(caller, password)
 }
+
+func (s *UserService) GetAllUsers(caller *domain.User) ([]domain.User, error) {
+	if !caller.IsAdmin {
+		return nil, errors.New("Unauthorized")
+	}
+	return s.store.GetAllUsers()
+}

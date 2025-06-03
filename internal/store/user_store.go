@@ -20,6 +20,7 @@ type UserStore interface {
 	ListUsers() ([]domain.User, error)
 	ChangeUserStatus(caller *domain.User, id int) error
 	UpdateSelfPassword(caller *domain.User, password string) error
+	GetAllUsers() ([]domain.User, error)
 }
 
 type userDBStore struct {
@@ -267,4 +268,37 @@ func (s *userDBStore) UpdateSelfPassword(caller *domain.User, password string) e
 		return sql.ErrNoRows
 	}
 	return nil
+}
+
+func (s *userDBStore) GetAllUsers() ([]domain.User, error) {
+	query := `
+		SELECT id, username, hashed_password, email, first_name, last_name, 
+		       is_admin, is_user, tenant_id, status
+		FROM users`
+
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []domain.User
+	for rows.Next() {
+		var user domain.User
+		err := rows.Scan(
+			&user.ID, &user.Username, &user.HashedPassword, &user.Email,
+			&user.FirstName, &user.LastName, &user.IsAdmin, &user.IsUser,
+			&user.TenantID, &user.Status,
+		)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }

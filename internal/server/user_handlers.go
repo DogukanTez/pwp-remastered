@@ -29,6 +29,7 @@ func (h *UserHandlers) RegisterRoutes(r chi.Router) {
 		r.Post("/", h.CreateUser)
 		r.Get("/{id}", h.GetUser)
 		r.Get("/me", h.GetSelfUser)
+		r.Get("/all", h.GetAllUsers)
 		r.Put("/{id}", h.UpdateUser)
 		r.Put("/me", h.UpdateSelfUser)
 		r.Put("/me/password", h.UpdateSelfPassword)
@@ -436,4 +437,33 @@ func (h *UserHandlers) UpdateSelfPassword(w http.ResponseWriter, r *http.Request
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *UserHandlers) GetAllUsers(w http.ResponseWriter, r *http.Request) {
+	caller, err := ExtractUserFromRequest(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if !caller.IsAdmin {
+		http.Error(w, "Unauthorized", http.StatusForbidden)
+		return
+	}
+
+	users, err := h.userService.GetAllUsers(&caller)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string][]domain.User{"users": users}
+	jsonResp, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResp)
 }
