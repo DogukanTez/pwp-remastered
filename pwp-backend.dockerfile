@@ -1,5 +1,6 @@
 # 1. Aşama: Build
-FROM golang:1.22.3 AS builder
+# FROM golang:1.22.3 AS builder
+FROM golang:latest AS builder
 
 WORKDIR /app
 
