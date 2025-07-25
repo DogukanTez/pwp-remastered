@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   psql_bp:
     image: postgres:latest
@@ -10,6 +12,44 @@ services:
       - "${DB_PORT}:5432"
     volumes:
       - psql_volume_bp:/var/lib/postgresql/data
+    networks:
+      - pwp-network
+
+  backend:
+    container_name: backend
+    build:
+      context: .              # go.mod burada
+      dockerfile: pwp-backend.dockerfile
+    ports:
+      - "5454:5454"           # dış:container içi
+    environment:
+      DB_HOST: psql_bp
+      DB_PORT: 5432
+      DB_USER: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_DATABASE}
+    depends_on:
+      - psql_bp
+    networks:
+      - pwp-network
+
+  frontend:
+    container_name: frontend
+    build:
+      context: ./client
+      dockerfile: pwp-fr.dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      VITE_API_URL: localhost:5454
+    depends_on:
+      - backend
+    networks:
+      - pwp-network
 
 volumes:
   psql_volume_bp:
+
+networks:
+  pwp-network:
+    driver: bridge
