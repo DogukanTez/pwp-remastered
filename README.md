@@ -1,6 +1,6 @@
 # Project pwp-remastered
 
-One Paragraph of project description goes here
+A proper remastered of previous version. A project for tracking your employees. Main purpose is tracking extra prices for transportation. 
 
 ## Getting Started
 
